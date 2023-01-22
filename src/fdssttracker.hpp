@@ -102,7 +102,7 @@ public:
     virtual void init(const cv::Rect &roi, cv::Mat image);
 
     // Update position based on the new frame
-    virtual cv::Rect update(cv::Mat image);
+    virtual  bool update(cv::Mat image,cv::Rect & roi);
 
     float interp_factor; // linear interpolation factor for adaptation
     float sigma; // gaussian kernel bandwidth
@@ -214,5 +214,6 @@ private:
 
     cv::Mat s_hann;
     cv::Mat ysf;
+    float _peak_value_thresh;
 
 };
