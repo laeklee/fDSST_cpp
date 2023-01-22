@@ -1,4 +1,12 @@
 /*
+ * @Descripttion: 
+ * @version: 
+ * @Author: Coderzlj
+ * @Date: 2023-01-22 22:16:32
+ * @LastEditors: Coderzlj
+ * @LastEditTime: 2023-01-22 23:02:45
+ */
+/*
  * File:   BasicTracker.h
  * Author: Joao F. Henriques, Joao Faro, Christian Bailer
  * Contact address: henriques@isr.uc.pt, joaopfaro@gmail.com, Christian.Bailer@dfki.de 
@@ -20,7 +28,11 @@
 
 #include <opencv2/opencv.hpp>
 #include <string>
-
+#if CV_VERSION_MAJOR == 3
+#define  OPENCV3
+#elif CV_VERSION_MAJOR == 4
+#define OPENCV4
+#endif
 class Tracker
 {
 public:
@@ -28,7 +40,7 @@ public:
    virtual  ~Tracker() { }
 
     virtual void init(const cv::Rect &roi, cv::Mat image) = 0;
-    virtual cv::Rect  update( cv::Mat image)=0;
+    virtual bool  update( cv::Mat image,cv::Rect &roi)=0;
 
 
 protected:

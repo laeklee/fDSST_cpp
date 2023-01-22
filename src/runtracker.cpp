@@ -31,6 +31,7 @@ int main(int argc, char* argv[]){
 	bool MULTISCALE = true;
 	bool SILENT = true;
 	bool LAB = false;
+	bool success = false;
 	// Create KCFTracker object
 	FDSSTTracker tracker(HOG, FIXEDWINDOW, MULTISCALE, LAB);
 
@@ -79,14 +80,14 @@ int main(int argc, char* argv[]){
 			showRect = initRect;
 		}
 		else{
-			showRect = tracker.update(processImg);
+			success = tracker.update(processImg,showRect);
 			// printf( "rect (w h): %d %d \n" , showRect.width, showRect.height);
 		}
 		auto t_end = clock();
 		duration += (double)(t_end - t_start) / CLOCKS_PER_SEC;
 		// cout << "all duration: " << duration << "\n";
-
-		cv::rectangle(processImg, showRect, cv::Scalar(0, 255, 0));
+		if(success)
+			cv::rectangle(processImg, showRect, cv::Scalar(0, 255, 0));
 		cv::imshow("windows", processImg);
 		cv::waitKey(1);
 		count++;

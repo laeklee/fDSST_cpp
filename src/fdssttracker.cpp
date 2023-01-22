@@ -209,6 +209,7 @@ FDSSTTracker::FDSSTTracker(bool hog, bool fixed_window, bool multiscale, bool la
     padding = 2.5;
     //output_sigma_factor = 0.1;
     output_sigma_factor = 0.125;
+    _peak_value_thresh = 0.2;
 
     if (hog) {    // HOG
         // VOT
@@ -297,7 +298,7 @@ void FDSSTTracker::init(const cv::Rect &roi, cv::Mat image)
 }
 
 // Update position based on the new frame
-cv::Rect FDSSTTracker::update(cv::Mat image)
+bool FDSSTTracker::update(cv::Mat image,cv::Rect & roi)
 {
     if (_roi.x + _roi.width <= 0) _roi.x = -_roi.width + 1;
     if (_roi.y + _roi.height <= 0) _roi.y = -_roi.height + 1;
@@ -313,6 +314,9 @@ cv::Rect FDSSTTracker::update(cv::Mat image)
 	t_start = clock();
 #endif
     cv::Point2f res = detect(getFeatures(image, 0, 1.0f), peak_value);
+
+    if(peak_value < _peak_value_thresh) return false;
+
 #ifdef PFS_DEBUG
 	t_end = clock();
 	std::cout << "translation detction duration: " << (t_end - t_start) / CLOCKS_PER_SEC << "\n";
@@ -354,8 +358,8 @@ cv::Rect FDSSTTracker::update(cv::Mat image)
     cv::Mat x = getFeatures(image, 0);
     train(x, interp_factor);
 
-
-    return _roi;
+    roi = _roi;
+    return true;
 }
 
 // Detect the new scaling rate
@@ -365,8 +369,11 @@ cv::Point2i FDSSTTracker::detect_scale(cv::Mat image)
 
   // Compute AZ in the paper
   cv::Mat add_temp;
-  cv::reduce(FFTTools::complexMultiplication(sf_num, xsf), add_temp, 0, CV_REDUCE_SUM);
-
+  #ifdef OPENCV3
+    cv::reduce(FFTTools::complexMultiplication(sf_num, xsf), add_temp, 0, CV_REDUCE_SUM);
+  #elif defined(OPENCV4)
+    cv::reduce(FFTTools::complexMultiplication(sf_num, xsf), add_temp, 0, cv::REDUCE_SUM);
+  #endif
   // compute the final y
   cv::Mat scale_responsef = FFTTools::complexDivisionReal(add_temp, (sf_den + scale_lambda));
 
@@ -687,7 +694,7 @@ void FDSSTTracker::dsstInit(const cv::Rect &roi, cv::Mat image)
 
   // Guassian peak for scales (after fft)
 
-  // ´¦Àí²åÖµÇ°µÄ³ß¶ÈÐòÁÐ£¬¼´ÐèÒªÌáÈ¡¶à³ß¶ÈÌØÕ÷µÄÒ»×éÖµ
+  // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÖµÇ°ï¿½Ä³ß¶ï¿½ï¿½ï¿½ï¿½Ð£ï¿½ï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½È¡ï¿½ï¿½ß¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½Öµ
   cv::Mat colScales =
 	  rangeToColVector<float>(-floor((n_scales - 1) / 2),
 	  ceil((n_scales - 1) / 2), n_scales);
@@ -711,10 +718,10 @@ void FDSSTTracker::dsstInit(const cv::Rect &roi, cv::Mat image)
   s_hann = createHanningMatsForScale();
 
   // Get all scale changing rate
-  scaleFactors = pow<float, float>(scale_step, colScales);
+  scaleFactors = pow<float, float>(scale_step, ss);
   
 
-  // ´¦Àí²åÖµºóµÄ³ß¶ÈÐòÁÐ
+  // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Öµï¿½ï¿½Ä³ß¶ï¿½ï¿½ï¿½ï¿½ï¿½
   cv::Mat interp_colScales =
 	  rangeToColVector<float>(-floor((n_interp_scales - 1) / 2),
 	  ceil((n_interp_scales - 1) / 2), n_interp_scales);
@@ -767,7 +774,7 @@ void FDSSTTracker::train_scale(cv::Mat image, bool ini)
   // Get Sigma{FF} in the paper (delta B)
   cv::Mat new_sf_den;
   cv::mulSpectrums(xsf, xsf, new_sf_den, 0, true);
-  cv::reduce(FFTTools::real(new_sf_den), new_sf_den, 0, CV_REDUCE_SUM);
+  cv::reduce(FFTTools::real(new_sf_den), new_sf_den, 0, cv::REDUCE_SUM);
 
   if(ini)
   {
