@@ -711,7 +711,7 @@ void FDSSTTracker::dsstInit(const cv::Rect &roi, cv::Mat image)
   s_hann = createHanningMatsForScale();
 
   // Get all scale changing rate
-  scaleFactors = pow<float, float>(scale_step, colScales);
+  scaleFactors = pow<float, float>(scale_step, ss);
   
 
   // 处理插值后的尺度序列
